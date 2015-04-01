@@ -1,3 +1,7 @@
+# set up logging before importing any other components
+from config import initialize_logging
+initialize_logging('jmxfetch')
+
 # std
 import os
 import logging
@@ -9,13 +13,14 @@ import signal
 
 # datadog
 from util import get_os, yLoader, yDumper
-from config import get_config, get_confd_path, get_jmx_status_path, get_logging_config, \
-    PathNotFound, DEFAULT_CHECK_FREQUENCY
+from utils.jmxfetch import JMX_FETCH_JAR_NAME
+from config import get_config, get_confd_path, get_jmx_status_path, \
+    get_logging_config, PathNotFound, DEFAULT_CHECK_FREQUENCY
 
 # 3rd party
 import yaml
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('jmxfetch')
 
 JAVA_LOGGING_LEVEL = {
     logging.CRITICAL: "FATAL",
@@ -27,7 +32,6 @@ JAVA_LOGGING_LEVEL = {
     logging.WARNING: "WARN",
 }
 
-JMX_FETCH_JAR_NAME = "jmxfetch-0.5.2-jar-with-dependencies.jar"
 _JVM_DEFAULT_MAX_MEMORY_ALLOCATION = " -Xmx200m"
 _JVM_DEFAULT_INITIAL_MEMORY_ALLOCATION = " -Xms50m"
 JMXFETCH_MAIN_CLASS = "org.datadog.jmxfetch.App"

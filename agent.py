@@ -35,7 +35,6 @@ from config import (
 )
 from daemon import AgentSupervisor, Daemon
 from emitter import http_emitter
-from jmxfetch import JMXFetch
 from util import (
     EC2,
     get_hostname,
