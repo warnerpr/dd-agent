@@ -18,7 +18,5 @@
         <string>com.datadoghq.agent</string>
         <key>CFBundleSignature</key>
         <string>????</string>
-        <key>LSUIElement</key>
-        <string>1</string>
     </dict>
 </plist>

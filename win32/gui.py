@@ -26,6 +26,7 @@ from guidata.configtools import (
     MONOSPACE,
 )
 from guidata.qt.QtCore import (
+    QEvent,
     QPoint,
     QSize,
     Qt,
@@ -33,6 +34,7 @@ from guidata.qt.QtCore import (
     SIGNAL,
 )
 from guidata.qt.QtGui import (
+    QApplication,
     QFont,
     QGroupBox,
     QHBoxLayout,
@@ -123,18 +125,7 @@ HUMAN_SERVICE_STATUS = {
 
 REFRESH_PERIOD = 5000
 
-START_AGENT = "Start Agent"
-STOP_AGENT = "Stop Agent"
-RESTART_AGENT = "Restart Agent"
-EXIT_MANAGER = "Exit Agent Manager"
 OPEN_LOG = "Open log file"
-
-SYSTEM_TRAY_MENU = [
-    (START_AGENT, lambda: agent_manager("start")),
-    (STOP_AGENT, lambda: agent_manager("stop")),
-    (RESTART_AGENT, lambda: agent_manager("restart")),
-    (EXIT_MANAGER, lambda: sys.exit(0)),
-]
 
 
 def get_checks():
@@ -536,14 +527,28 @@ class MainWindow(QSplitter):
             "JMX log file"
         )
 
+    def show(self):
+        QSplitter.show(self)
+        self.raise_()
+
 
 class Menu(QMenu):
+    START_AGENT = "Start Agent"
+    STOP_AGENT = "Stop Agent"
+    RESTART_AGENT = "Restart Agent"
+    EXIT_MANAGER = "Exit Agent Manager"
 
-    def __init__(self, parent=None, ):
+    def __init__(self, parent=None):
         QMenu.__init__(self, parent)
         self.options = {}
+        system_tray_menu = [
+            (self.START_AGENT, lambda: agent_manager("start")),
+            (self.STOP_AGENT, lambda: agent_manager("stop")),
+            (self.RESTART_AGENT, lambda: agent_manager("restart")),
+            (self.EXIT_MANAGER, lambda: sys.exit(0)),
+        ]
 
-        for name, action in SYSTEM_TRAY_MENU:
+        for name, action in system_tray_menu:
             menu_action = self.addAction(name)
             self.connect(menu_action, SIGNAL('triggered()'), action)
             self.options[name] = menu_action
@@ -553,17 +558,17 @@ class Menu(QMenu):
     def update_options(self):
         status = agent_status()
         if status == AGENT_RUNNING:
-            self.options[START_AGENT].setEnabled(False)
-            self.options[RESTART_AGENT].setEnabled(True)
-            self.options[STOP_AGENT].setEnabled(True)
+            self.options[self.START_AGENT].setEnabled(False)
+            self.options[self.RESTART_AGENT].setEnabled(True)
+            self.options[self.STOP_AGENT].setEnabled(True)
         elif status == AGENT_STOPPED:
-            self.options[START_AGENT].setEnabled(True)
-            self.options[RESTART_AGENT].setEnabled(False)
-            self.options[STOP_AGENT].setEnabled(False)
+            self.options[self.START_AGENT].setEnabled(True)
+            self.options[self.RESTART_AGENT].setEnabled(False)
+            self.options[self.STOP_AGENT].setEnabled(False)
         elif status in [AGENT_START_PENDING, AGENT_STOP_PENDING]:
-            self.options[START_AGENT].setEnabled(False)
-            self.options[RESTART_AGENT].setEnabled(False)
-            self.options[STOP_AGENT].setEnabled(False)
+            self.options[self.START_AGENT].setEnabled(False)
+            self.options[self.RESTART_AGENT].setEnabled(False)
+            self.options[self.STOP_AGENT].setEnabled(False)
 
 
 class SettingMenu(QMenu):
@@ -699,9 +704,25 @@ def info_popup(message, parent=None):
     QMessageBox.information(parent, 'Message', message, QMessageBox.Ok)
 
 
+class AgentManagerApp(QApplication):
+    def __init__(self):
+        QApplication.__init__(self, [])
+        QApplication.setQuitOnLastWindowClosed(False)
+        self.main_window = None
+
+    def event(self, e):
+        if e.type() == QEvent.Type.ApplicationActivate:
+            self.main_window.show()
+        print 'Inside event(): %s' % e.type()
+        return QApplication.event(self, e)
+
+    def set_main_window(self, main_window):
+        self.main_window = main_window
+
+
 if __name__ == '__main__':
-    from guidata.qt.QtGui import QApplication
-    app = QApplication([])
+    app = AgentManagerApp()
     win = MainWindow()
+    app.set_main_window(win)
     win.show()
     app.exec_()
